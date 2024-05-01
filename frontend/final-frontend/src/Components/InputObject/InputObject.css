@@ -1,0 +1,99 @@
+.inputObjectContainer {
+    width: 50%; /* Adjust as needed */
+    height: 50vh; /* Adjust as needed */
+}
+
+/* Styling for input field*/
+
+.inputAndSubmitContainer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+.input{
+    display: flex;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+
+/* Styling for buttons */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.buttonContainer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Styling for input fields */
+input[type="text"],
+input[type="password"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.Classical{
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.Rock{
+    padding: 10px 20px;
+    background-color: #ff3c00;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.Rnb{
+    padding: 10px 20px;
+    background-color: #00ffdd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.Jazz{
+    padding: 10px 20px;
+    background-color: #ce03d9;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.Submit{
+    padding: 10px 20px;
+    background-color: #404143;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
