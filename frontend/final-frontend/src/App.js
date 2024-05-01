@@ -18,8 +18,15 @@ function App() {
           Learn React
         </a>
       </header>
+      <TextBox />
     </div>
   );
+
+  function TextBox() {
+    return (
+      <input type="text" placeholder="Enter text here" />
+    );
+  }
 }
 
 export default App;
