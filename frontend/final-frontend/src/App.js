@@ -5,6 +5,7 @@ function App() {
   return (
     <div className="App">
       <TextBox />
+      <SubmitButton />
       <ClassicalButton/>
       <RockButton/>
       <RnbButton/>
@@ -39,6 +40,11 @@ function App() {
   function JazzButton() {
     return (
       <button>Jazz</button>
+    );
+  }
+  function SubmitButton() {
+    return (
+      <button>Submit</button>
     );
   }
 
