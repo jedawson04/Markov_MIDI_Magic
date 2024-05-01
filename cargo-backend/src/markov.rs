@@ -4,7 +4,7 @@ use markov::Chain;
 /// documentation for markov crate: https://crates.io/crates/markov
 
 /// train model method to create a new markov chain and train it on the data parameter
-pub fn train_model(_data: &str) {
+pub fn _train_model(_data: &str) {
     let mut chain = Chain::new(); // create a new markov chain
 
     // examples straight from the docs

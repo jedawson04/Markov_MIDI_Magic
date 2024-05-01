@@ -50,7 +50,6 @@ name = "final-project"
 version = "0.1.0"
 dependencies = [
  "markov",
- "midi-reader-writer",
  "midly",
 ]
 
@@ -59,12 +58,6 @@ name = "fixedbitset"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
-
-[[package]]
-name = "gcd"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
 
 [[package]]
 name = "getopts"
@@ -112,15 +105,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.10.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -139,22 +123,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc6ad68e26d51a9558f65e93b9795c9422630d0932717a3235668bb9ab71e3fd"
 dependencies = [
  "getopts",
- "itertools 0.9.0",
+ "itertools",
  "petgraph",
  "rand",
  "serde",
  "serde_derive",
  "serde_yaml",
-]
-
-[[package]]
-name = "midi-reader-writer"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "018d2ebc217e86d8ba3fdb6b27ada0df766c2e4d154779e9fe3d1cfdc708b719"
-dependencies = [
- "itertools 0.10.5",
- "timestamp-stretcher",
 ]
 
 [[package]]
@@ -308,15 +282,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "timestamp-stretcher"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a6a1061624c20a0350a16d5c7244dc45e5093b59eba315d32d1539c06ea6b8d"
-dependencies = [
- "gcd",
 ]
 
 [[package]]

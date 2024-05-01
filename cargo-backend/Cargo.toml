@@ -7,6 +7,4 @@ edition = "2021"
 
 [dependencies]
 markov = "1.1.0"
-midi-reader-writer = "0.1.1"
 midly = "0.5.3"
-
