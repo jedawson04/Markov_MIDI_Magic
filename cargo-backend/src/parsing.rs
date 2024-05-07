@@ -41,113 +41,91 @@ use std::{error::Error, fs};
 pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
     let bytes = fs::read(input_filepath)?; // use read to convert filepath to bytes
     let input_midi_file = Smf::parse(&bytes)?; // use parse to create a midi object
-    // store longest track with it's num
-    println!("{0:?}",input_midi_file.header );
+    // println!("{0:?}",input_midi_file.header ); // print header
+    // use track with most events
     let mut longest_track: &Vec<TrackEvent<'_>> = &Vec::new();
-    for (i, track) in input_midi_file.tracks.iter().enumerate() {
+    for track in input_midi_file.tracks.iter() {
         if track.len() > longest_track.len() {
             longest_track = track;
         }
-        println!("track {} has {} events", i, track.len()); // print each track and num of events
     }
-    // use track with most events
-    let mut note_sequence: Vec<(Note, u32)> = Vec::new(); // whatever object we want to use to store our relevant information from events
+    let mut note_sequence: Vec<(Note, u32)> = Vec::new(); // store desired notes in a sequence with num of ticks
     let mut current_note_val = 129; // key value of our current note on
     let mut ticks_since_on = 0;
     let mut rest_ticks = 0;
     let mut have_a_note: bool = false; // whether or not we have a note we are reading
-    for event in longest_track.iter() // grabs first 150 notes of event
+    for event in longest_track.iter()//.take(150) // grabs first 150 notes of event
     { 
-        let mut note_event = false;
         // match on event and set note delta and note on
-        let (mut note, mut delta, mut note_on): (u8, u32, bool) = (0,0,false);
-        match event.kind { 
-            Midi {message, channel} => {  
-                let channel_zero = u4::from(0); // this ensures we are only training on channels with piano -- can be changed
-                match (message,channel) { 
-                    // delta is how many MIDI ticks after the previous event should this event fire.
-                    (MidiMessage::NoteOff{key, ..},channel_zero) => { 
-                        // let info: String = format!("{key} off with delta {0}",event.delta);
-                        (note, delta, note_on) = (u8::from(key), u32::from(event.delta), false);
-                        note_event = true;
-                        // if key == current_note_val {
-                            //     note_sequence.push(note_tuple);
-                            // }
-                            // can use duration enum here to round -- depending on the tempo..? -- not sure
-                            // println!("{key} off with delta {0}",event.delta);
-                    }
-                    (MidiMessage::NoteOn{key, ..},channel_zero) => { 
-                        // current_note_val = key;
-                        (note, delta, note_on) = (u8::from(key), u32::from(event.delta), true);
-                        note_event = true;
-                        // let info: String = format!("{key} on with delta {0}",event.delta);
-                        // println!("{key} on with delta {0}",event.delta);
-                    }
-                    _ => (),
+        if let Midi {message, channel} = event.kind {
+            let (note, delta, note_on): (u8, u32, bool);
+            let _channel_zero = u4::from(0); // this ensures we are only training on channels with piano -- can be changed
+            match (message,channel) { 
+                // delta is how many MIDI ticks after the previous event should this event fire.
+                (MidiMessage::NoteOff{key, ..},_channel_zero) => { 
+                    (note, delta, note_on) = (u8::from(key), u32::from(event.delta), false);
                 }
+                (MidiMessage::NoteOn{key, ..},_channel_zero) => { 
+                    (note, delta, note_on) = (u8::from(key), u32::from(event.delta), true);
+                }
+                _ => continue, // if we don't have a NoteOn or NoteOff event, continue
             }
-            _ => (),
-        }
-        if !note_event { // abstract - refactor this soon
-            continue;
-        }
-        println!("The events note val is: {}, the current note val is: {} this note is on is {}", note, current_note_val, note_on);
-        if !have_a_note {
-            println!("\tWe do not have a current note.");
-            let pitch_difference: i32 = (note as i32 - current_note_val as i32).try_into().unwrap();
-            // if this note should become the current note (different if statement depending on if it's the starting note vs following another note)
-            if current_note_val == 129 {
-                println!("We are setting the very first current note.");
-                // do we want to set this as the current note or not?
-                if note >= 50 && note < 75 {
+            println!("The events note val is: {}, the current note val is: {} this note is on is {}", note, current_note_val, note_on);
+            // could probably abstract the following code into a fn call
+            if !have_a_note {
+                println!("\tWe do not have a current note.");
+                let pitch_difference: i32 = note as i32 - current_note_val as i32;
+                // if this note should become the current note (different if statement depending on if it's the starting note vs following another note)
+                if current_note_val == 129 {
+                    println!("We are setting the very first current note.");
+                    // do we want to set this as the current note or not?
+                    if (50..75).contains(&note) {
+                        // set as the current note (and have_a_note bool to true)
+                        current_note_val = note;
+                        have_a_note = true;
+                    }
+                } else if (-12..12).contains(&pitch_difference) {
+                    println!("We are changing to a new current note");
                     // set as the current note (and have_a_note bool to true)
                     current_note_val = note;
                     have_a_note = true;
-                }
-            } else if pitch_difference < 12 || pitch_difference > -12 {
-                println!("We are changing to a new current note");
-                // set as the current note (and have_a_note bool to true)
-                current_note_val = note;
-                have_a_note = true;
-                // if rest_ticks is not 0
-                if rest_ticks != 0 {
+                    // if rest_ticks is not 0
+                    if rest_ticks != 0 {
+                        // increment rest ticks
+                        // push a rest/rest_ticks tuple to our note sequence list
+                        note_sequence.push((Note::Rest, rest_ticks + delta));
+                        // reset the rest ticks variable to 0
+                        rest_ticks = 0;
+                    }
+                } else {
+                    println!("This note is not going to become out current note.");
                     // increment rest ticks
-                    // push a rest/rest_ticks tuple to our note sequence list
-                    note_sequence.push((Note::Rest, rest_ticks + delta));
-                    // reset the rest ticks variable to 0
-                    rest_ticks = 0;
+                    rest_ticks += delta;
                 }
-            } else {
-                println!("This note is not going to become out current note.");
-                // increment rest ticks
-                rest_ticks += delta;
             }
-        }
-        else {
-            println!("We do have a current note");
-            // if the current event is not our current note's Note Off signal
-            if note != current_note_val {
-                println!("This event is not the desired Note Off signal.");
-                // increment ticks since on
-                ticks_since_on += delta;
-            } else { // else (should only catch if this is our desired Note Off signal)
-                println!("This event IS the desired Note Off signal.");
-                // increment ticks since on
-                // push note/ticks since on tuple to our note sequence list
-                note_sequence.push((Note::Key(current_note_val), ticks_since_on + delta));
-                // set current note to none, set ticks since on variable to 0 and have_a_note bool to false
-                have_a_note = false;
-                ticks_since_on = 0;
+            else {
+                println!("We do have a current note");
+                // if the current event is not our current note's Note Off signal
+                if note != current_note_val {
+                    println!("This event is not the desired Note Off signal.");
+                    // increment ticks since on
+                    ticks_since_on += delta;
+                } else { // else (should only catch if this is our desired Note Off signal)
+                    println!("This event IS the desired Note Off signal.");
+                    // increment ticks since on
+                    // push note/ticks since on tuple to our note sequence list
+                    note_sequence.push((Note::Key(current_note_val), ticks_since_on + delta));
+                    // set current note to none, set ticks since on variable to 0 and have_a_note bool to false
+                    have_a_note = false;
+                    ticks_since_on = 0;
+                }
             }
+            println!();
         }
-        println!();
     }
     // prints out all the stored info and length of vec
     println!("{note_sequence:?}"); 
     println!("{}", note_sequence.len()); 
-
-    // want to store notes with their on off and duration  
-
     Ok(())
 }
 // note about current output: we are not successfully keeping the following note limited within in octave either direction of the previous
