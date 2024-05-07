@@ -4,7 +4,7 @@ mod parsing; // module for parsing to and from midi files
 
 fn run() -> Result<()> {
     // calls important methods from modules
-    let specific_file = "chopin_ballade_3_(c)lubetsky"; // specific file name
+    let specific_file = "chet1007"; // specific file name
     let specified_genre = "classical"; // for now we will hardcode this
     let path = format!("./src/midi-files-by-genre/{specified_genre}/{specific_file}.mid"); // keep this the same
     

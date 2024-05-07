@@ -56,9 +56,9 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
     let mut ticks_since_on = 0;
     let mut rest_ticks = 0;
     let mut have_a_note: bool = false; // whether or not we have a note we are reading
-    let mut note_event = false;
-    for event in longest_track.iter().take(50) // grabs first 150 notes of event
+    for event in longest_track.iter() // grabs first 150 notes of event
     { 
+        let mut note_event = false;
         // match on event and set note delta and note on
         let (mut note, mut delta, mut note_on): (u8, u32, bool) = (0,0,false);
         match event.kind { 
@@ -78,7 +78,7 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
                     }
                     (MidiMessage::NoteOn{key, ..},channel_zero) => { 
                         // current_note_val = key;
-                        (note, delta, note_on) = (u8::from(key), u32::from(event.delta), false);
+                        (note, delta, note_on) = (u8::from(key), u32::from(event.delta), true);
                         note_event = true;
                         // let info: String = format!("{key} on with delta {0}",event.delta);
                         // println!("{key} on with delta {0}",event.delta);
@@ -88,10 +88,10 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
             }
             _ => (),
         }
-        if !note_event { // abstract / refactor this soon
+        if !note_event { // abstract - refactor this soon
             continue;
         }
-        println!("The events note val is: {}, the current note val is: {}", note, current_note_val);
+        println!("The events note val is: {}, the current note val is: {} this note is on is {}", note, current_note_val, note_on);
         if !have_a_note {
             println!("\tWe do not have a current note.");
             let pitch_difference: i32 = (note as i32 - current_note_val as i32).try_into().unwrap();
@@ -115,7 +115,7 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
                     // push a rest/rest_ticks tuple to our note sequence list
                     note_sequence.push((Note::Rest, rest_ticks + delta));
                     // reset the rest ticks variable to 0
-                rest_ticks = 0;
+                    rest_ticks = 0;
                 }
             } else {
                 println!("This note is not going to become out current note.");
@@ -124,9 +124,9 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
             }
         }
         else {
-            println!("\tWe do have a current note");
+            println!("We do have a current note");
             // if the current event is not our current note's Note Off signal
-            if note != current_note_val || !note_on {
+            if note != current_note_val {
                 println!("This event is not the desired Note Off signal.");
                 // increment ticks since on
                 ticks_since_on += delta;
@@ -140,6 +140,7 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
                 ticks_since_on = 0;
             }
         }
+        println!();
     }
     // prints out all the stored info and length of vec
     println!("{note_sequence:?}"); 
@@ -149,6 +150,8 @@ pub fn from_midi(input_filepath: &str) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+// note about current output: we are not successfully keeping the following note limited within in octave either direction of the previous
+// also there is some weird stuff w tick lengths in the thousands/tens of thousands, but that could be legit I guess
 
 // takes in a markov object and returns a midi file
 pub fn _to_midi(_predicted_sequence: &str, _output_filename: &str) {
