@@ -4,16 +4,12 @@ mod parsing; // module for parsing to and from midi files
 
 fn run() -> Result<()> {
     // calls important methods from modules
-    let specific_file = "chet1007"; // specific file name
+    let specific_file = "51126a_ballade_op_47_no_3_a_flat_(nc)smythe"; // specific file name
     let specified_genre = "classical"; // for now we will hardcode this
     let path = format!("./src/midi-files-by-genre/{specified_genre}/{specific_file}.mid"); // keep this the same
 
-    // let _parsed_midi =  assign this to a value when we get it to return one
-    match parsing::from_midi(&path) {
-        Err(err) => eprint!("{err}"), // propogate errors
-        _ => println!("yay"),         // yay!
-    };
-
+    let note_sequence = parsing::from_midi(&path).unwrap(); // parse midi file to a note sequence
+    println!("{:?}", note_sequence);
     // markov::train_model("parsed_midi"); // call markov model
 
     Ok(())
