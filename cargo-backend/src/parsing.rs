@@ -2,7 +2,7 @@
 // this is an excellent website explaining what MIDI data looks like. It's a little tough to read but has great info
 // plus it has example midi files at the bottom
 
-use midly::{num::u4, MidiMessage, Smf, TrackEvent, TrackEventKind::Midi};
+use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind::Midi};
 use std::{error::Error, fs};
 
 #[derive(Debug)]
@@ -28,34 +28,33 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, u32)>, Box<dyn Error
                                                           // initalize variables for parsing midi
     let (mut current_note_val, mut ticks_since_on, mut rest_ticks, mut current_note) =
         (128, 0, 0, false);
-    for event in longest_track.iter() {
+    for event in longest_track.iter(){
         // if event.kind is Midi check if we have a NoteOn/Off event
-        if let Midi { message, channel } = event.kind {
+        if let Midi { message, .. } = event.kind {
             let (note, delta): (u8, u32);
-            let _channel_zero = u4::from(0); // this ensures we are only training on channels with piano -- can be changed
-            match (message, channel) {
+            match message {
                 // store note, delta tuple
-                (MidiMessage::NoteOff { key, .. }, _channel_zero) | (MidiMessage::NoteOn { key, .. }, _channel_zero) => {
+                MidiMessage::NoteOff { key, .. } | MidiMessage::NoteOn { key, .. } => {
                     (note, delta) = (u8::from(key), u32::from(event.delta));
                 }
                 _ => continue, // if we don't have a NoteOn or NoteOff event, continue
             }
-            println!(
-                "The events note val is: {}, the current note val is: {} ",
-                note, current_note_val
-            );
+            // println!(
+            //     // "The events note val is: {}, the current note val is: {} ",
+            //     note, current_note_val
+            // );
             if !current_note {
-                println!("\tWe do not have a current note.");
+                // println!("\tWe do not have a current note.");
                 // set the first note
                 if current_note_val == 128 && (50..75).contains(&note) {
-                    println!("We are setting the very first current note.");
+                    // println!("We are setting the very first current note.");
                     current_note = true;
                     current_note_val = note;
                 }
                 // sets note if we are within an octave
                 let pitch_difference: i32 = note as i32 - current_note_val as i32;
                 if (-12..12).contains(&pitch_difference) {
-                    println!("This note IS going to become our current note.");
+                    // println!("This note IS going to become our current note.");
                     current_note_val = note;
                     current_note = true;
                     // add a rest to note_sequence if applicable
@@ -64,26 +63,26 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, u32)>, Box<dyn Error
                         rest_ticks = 0;
                     }
                 } else {
-                    println!("This note is not going to become our current note.");
+                    // println!("This note is not going to become our current note.");
                     // increment rest ticks
                     rest_ticks += delta;
                 }
             } else {
-                println!("We do have a current note");
+                // println!("We do have a current note");
                 if note == current_note_val {
-                    println!("This event IS the desired Note Off signal.");
+                    // println!("This event IS the desired Note Off signal.");
                     // add note to sequence
                     note_sequence.push((Note::Key(current_note_val), ticks_since_on + delta));
                     // reset ticks and set current_note to false
                     current_note = false;
                     ticks_since_on = 0;
                 } else {
-                    println!("This event is not the desired Note Off signal.");
+                    // println!("This event is not the desired Note Off signal.");
                     // increment ticks since on
                     ticks_since_on += delta;
                 }
             }
-            println!();
+            // println!();
         }
     }
     Ok(note_sequence)
