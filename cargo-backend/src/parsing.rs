@@ -5,6 +5,7 @@
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind::Midi, Timing::Metrical};
 use std::fs;
 use crate::Result;
+
 #[derive(Debug)]
 pub enum Note {
     // each note is either a key (with specified value) or a rest
@@ -121,3 +122,87 @@ pub fn _to_midi(_predicted_sequence: &str, _output_filename: &str) {
 // 30 - 90 might be a good cutoff range for markov model.. -- depends on training data.
 
 // if we hit a note on or off print it with it's delta --
+
+pub fn tuples_to_nums(notes_and_lengths: Vec<(Note, f32)>, num_of_octaves: u32, starting_pitch: u32, lengths_to_include: Vec<f32>) -> Vec<u32> {
+	let mut new_note_sequence: Vec<u32> = Vec::new();
+
+    // for each note duration pair in our previous vector
+	for (note, duration) in notes_and_lengths {
+    	let mut normalized_pitch_val: u32;
+
+        // setting normalized pitch value to the initial. 
+    	match note {
+        	Note::Key(pitch) => {
+            	normalized_pitch_val = pitch as u32 - starting_pitch;
+            	while normalized_pitch_val < 1 {
+                	normalized_pitch_val += 12;
+            	}
+            	while normalized_pitch_val > (num_of_octaves * 12) {
+                	normalized_pitch_val -= 12;
+            	}
+        	},
+        	Note::Rest => normalized_pitch_val = 0,
+    	}
+
+    	let mut length_difference: f32 = f32::MAX;
+        let mut closest_length: f32 = -1.0;
+        let mut length_multiplier: u32 = u32::MAX;
+        // loop determines the closest quantized length we want to look at
+    	for possible_length in &lengths_to_include {
+            if length_difference > (duration - possible_length).abs() {
+                length_difference = duration - possible_length;
+                closest_length = *possible_length;
+            }
+    	}
+
+        // this loop sets the length multiplier based on the closest length
+        for i in 0..lengths_to_include.len() - 1 {
+            if closest_length - lengths_to_include[i] == 0.0 {
+                length_multiplier = i as u32;
+            }
+        }
+
+        // if length multiplier is still initial value, we've got a problem
+        if length_multiplier == u32::MAX {
+            println!("SOMETHING HAS GONE WRONG. THIS SHOULD'VE BEEN UPDATED TO BE A SMALLER NUMBER.")
+        }
+
+        new_note_sequence.push(normalized_pitch_val + 12 * num_of_octaves * length_multiplier);
+	}
+
+	new_note_sequence
+}
+
+
+
+#[cfg(test)]
+mod test {
+    use super::{tuples_to_nums, Note};
+
+
+    #[test]
+    fn do_simple_vals_parse_right() {
+        let example_list: Vec<(Note, f32)> = vec![(Note::Key(56), 0.25472), (Note::Key(76), 1.25472), (Note::Key(63), 0.65472)];
+
+        // 6 + 36 * 0, 26 + 36 * 2, 13 + 36 * 1
+        let correct_list = vec![6, 98, 49];
+
+        assert_eq!(correct_list, tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0]));
+    }
+
+    fn rests_of_different_lengths() {
+        todo!();
+    }
+
+    fn testing_super_small_and_large_lengths() {
+        todo!();
+    }
+
+    fn different_num_octaces() {
+
+    }
+
+    fn random_starting_notes() {
+
+    }
+}
