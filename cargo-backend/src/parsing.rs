@@ -2,9 +2,9 @@
 // this is an excellent website explaining what MIDI data looks like. It's a little tough to read but has great info
 // plus it has example midi files at the bottom
 
-use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind::Midi, Timing::Metrical};
-use std::fs;
 use crate::Result;
+use midly::{MidiMessage, Smf, Timing::Metrical, TrackEvent, TrackEventKind::Midi};
+use std::fs;
 
 #[derive(Debug)]
 pub enum Note {
@@ -63,7 +63,8 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
                     current_note = true;
                     // add a rest to note_sequence if applicable
                     if rest_ticks != 0 {
-                        let beat_length: f32 = (rest_ticks as f32 + delta as f32) / this_metrical as f32;
+                        let beat_length: f32 =
+                            (rest_ticks as f32 + delta as f32) / this_metrical as f32;
                         note_sequence.push((Note::Rest, beat_length));
                         rest_ticks = 0;
                     }
@@ -77,7 +78,8 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
                 if note == current_note_val {
                     // println!("This event IS the desired Note Off signal.");
                     // add note to sequence
-                    let beat_length: f32 = (ticks_since_on as f32 + delta as f32) / this_metrical as f32;
+                    let beat_length: f32 =
+                        (ticks_since_on as f32 + delta as f32) / this_metrical as f32;
                     note_sequence.push((Note::Key(current_note_val), beat_length));
                     // reset ticks and set current_note to false
                     current_note = false;
@@ -90,13 +92,13 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
             }
             // println!();
         }
-        
     }
     Ok(note_sequence)
 }
 // there is some weird stuff w tick lengths in the thousands/tens of thousands, but it could be legit
 
-fn _convert_to_hash(_note: u8, _beats: f32) { // converts to hashed number for markov model
+fn _convert_to_hash(_note: u8, _beats: f32) {
+    // converts to hashed number for markov model
     todo!();
 }
 // takes in a markov object and returns a midi file
@@ -121,73 +123,81 @@ pub fn _to_midi(_predicted_sequence: &str, _output_filename: &str) {
 // this method allows for us to count both rests and note length even if rests are unused
 // 30 - 90 might be a good cutoff range for markov model.. -- depends on training data.
 
-// if we hit a note on or off print it with it's delta --
+// covert a (Note, beat) tuple to a single unique num to pass into our markov model
+pub fn tuples_to_nums(
+    note_sequence: Vec<(Note, f32)>,
+    num_octaves: u32,
+    lowest_allowed_pitch: u32,
+    quantized_durations: Vec<f32>,
+) -> Vec<u32> {
+    let mut new_note_sequence: Vec<u32> = Vec::new();
+    for (note, duration) in note_sequence {
+        let mut normalized_pitch_val = 0; // assume rest normalized pitch val
 
-pub fn tuples_to_nums(notes_and_lengths: Vec<(Note, f32)>, num_of_octaves: u32, starting_pitch: u32, lengths_to_include: Vec<f32>) -> Vec<u32> {
-	let mut new_note_sequence: Vec<u32> = Vec::new();
-
-    // for each note duration pair in our previous vector
-	for (note, duration) in notes_and_lengths {
-    	let mut normalized_pitch_val: u32;
-
-        // setting normalized pitch value to the initial. 
-    	match note {
-        	Note::Key(pitch) => {
-            	normalized_pitch_val = pitch as u32 - starting_pitch;
-            	while normalized_pitch_val < 1 {
-                	normalized_pitch_val += 12;
-            	}
-            	while normalized_pitch_val > (num_of_octaves * 12) {
-                	normalized_pitch_val -= 12;
-            	}
-        	},
-        	Note::Rest => normalized_pitch_val = 0,
-    	}
-
-    	let mut length_difference: f32 = f32::MAX;
-        let mut closest_length: f32 = -1.0;
-        let mut length_multiplier: u32 = u32::MAX;
-        // loop determines the closest quantized length we want to look at
-    	for possible_length in &lengths_to_include {
-            if length_difference > (duration - possible_length).abs() {
-                length_difference = duration - possible_length;
-                closest_length = *possible_length;
+        if let Note::Key(pitch) = note {
+            // normalize pitch to lowest_allowed_pitch
+            normalized_pitch_val = pitch as u32 - lowest_allowed_pitch;
+            // if we have a negative number, add octaves until positive
+            while normalized_pitch_val < 1 {
+                normalized_pitch_val += 12;
             }
-    	}
-
-        // this loop sets the length multiplier based on the closest length
-        for i in 0..lengths_to_include.len() - 1 {
-            if closest_length - lengths_to_include[i] == 0.0 {
+            // if we have a number larger than our max value, subtract octaves
+            while normalized_pitch_val > (num_octaves * 12) {
+                normalized_pitch_val -= 12;
+            }
+        }
+        // you can probably do this in one line somehow with a map or filter / closure but this works and is pretty readable
+        let (mut min_difference, mut closest_duration, mut length_multiplier) =
+            (f32::MAX, -1.0, u32::MAX);
+        for quantized_duration in &quantized_durations {
+            let difference = (duration - quantized_duration).abs();
+            if min_difference > difference {
+                min_difference = difference;
+                closest_duration = *quantized_duration;
+            }
+        }
+        // sets the length multiplier based on the closest length
+        for (i, dur) in quantized_durations
+            .iter()
+            .enumerate()
+            .take(quantized_durations.len() - 1)
+        {
+            if closest_duration - dur == 0.0 {
                 length_multiplier = i as u32;
             }
         }
-
-        // if length multiplier is still initial value, we've got a problem
+        // throw an error if length multiplier is still initial value
         if length_multiplier == u32::MAX {
-            println!("SOMETHING HAS GONE WRONG. THIS SHOULD'VE BEEN UPDATED TO BE A SMALLER NUMBER.")
+            eprintln!(
+                "SOMETHING HAS GONE WRONG. THIS SHOULD'VE BEEN UPDATED TO BE A SMALLER NUMBER."
+            )
         }
-
-        new_note_sequence.push(normalized_pitch_val + 12 * num_of_octaves * length_multiplier);
-	}
-
-	new_note_sequence
+        // hash val depending on normalized pitch, num octaves and length multiplier
+        let hashed_pitch_val = normalized_pitch_val + 12 * num_octaves * length_multiplier;
+        new_note_sequence.push(hashed_pitch_val);
+    }
+    new_note_sequence
 }
-
-
 
 #[cfg(test)]
 mod test {
     use super::{tuples_to_nums, Note};
 
-
     #[test]
     fn do_simple_vals_parse_right() {
-        let example_list: Vec<(Note, f32)> = vec![(Note::Key(56), 0.25472), (Note::Key(76), 1.25472), (Note::Key(63), 0.65472)];
+        let example_list: Vec<(Note, f32)> = vec![
+            (Note::Key(56), 0.25472),
+            (Note::Key(76), 1.25472),
+            (Note::Key(63), 0.65472),
+        ];
 
         // 6 + 36 * 0, 26 + 36 * 2, 13 + 36 * 1
         let correct_list = vec![6, 98, 49];
 
-        assert_eq!(correct_list, tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0]));
+        assert_eq!(
+            correct_list,
+            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+        );
     }
 
     fn rests_of_different_lengths() {
@@ -198,11 +208,7 @@ mod test {
         todo!();
     }
 
-    fn different_num_octaces() {
+    fn different_num_octaces() {}
 
-    }
-
-    fn random_starting_notes() {
-
-    }
+    fn random_starting_notes() {}
 }

@@ -10,7 +10,7 @@
 //     // examples straight from the docs
 
 //     // predicting 5 lines using chain iterators
-//     for tuple in note_sequence { 
+//     for tuple in note_sequence {
 //         println!("{:?}", tuple);
 //         chain.feed_str(&tuple);
 //     }
