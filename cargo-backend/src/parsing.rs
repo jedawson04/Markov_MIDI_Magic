@@ -97,10 +97,6 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
 }
 // there is some weird stuff w tick lengths in the thousands/tens of thousands, but it could be legit
 
-fn _convert_to_hash(_note: u8, _beats: f32) {
-    // converts to hashed number for markov model
-    todo!();
-}
 // takes in a markov object and returns a midi file
 pub fn _to_midi(_predicted_sequence: &str, _output_filename: &str) {
     // parse string and create a midi_file with output_filename
@@ -128,7 +124,7 @@ pub fn tuples_to_nums(
     note_sequence: Vec<(Note, f32)>,
     num_octaves: u32,
     lowest_allowed_pitch: u32,
-    quantized_durations: Vec<f32>,
+    quantized_durations: &Vec<f32>,
 ) -> Vec<u32> {
     let mut new_note_sequence: Vec<u32> = Vec::new();
     for (note, duration) in note_sequence {
@@ -136,20 +132,20 @@ pub fn tuples_to_nums(
 
         if let Note::Key(pitch) = note {
             // normalize pitch to lowest_allowed_pitch
-            normalized_pitch_val = pitch as u32 - lowest_allowed_pitch;
+            normalized_pitch_val = pitch as i32 - lowest_allowed_pitch as i32;
             // if we have a negative number, add octaves until positive
             while normalized_pitch_val < 1 {
                 normalized_pitch_val += 12;
             }
             // if we have a number larger than our max value, subtract octaves
-            while normalized_pitch_val > (num_octaves * 12) {
+            while normalized_pitch_val > (num_octaves as i32 * 12) {
                 normalized_pitch_val -= 12;
             }
         }
         // you can probably do this in one line somehow with a map or filter / closure but this works and is pretty readable
         let (mut min_difference, mut closest_duration, mut length_multiplier) =
             (f32::MAX, -1.0, u32::MAX);
-        for quantized_duration in &quantized_durations {
+        for quantized_duration in quantized_durations {
             let difference = (duration - quantized_duration).abs();
             if min_difference > difference {
                 min_difference = difference;
@@ -158,10 +154,10 @@ pub fn tuples_to_nums(
         }
         // sets the length multiplier based on the closest length
         for (i, dur) in quantized_durations
-            .iter()
-            .enumerate()
-            .take(quantized_durations.len() - 1)
+        .iter()
+        .enumerate()
         {
+            println!("cloeset duration: {}, current dur: {}", closest_duration, dur);
             if closest_duration - dur == 0.0 {
                 length_multiplier = i as u32;
             }
@@ -173,7 +169,7 @@ pub fn tuples_to_nums(
             )
         }
         // hash val depending on normalized pitch, num octaves and length multiplier
-        let hashed_pitch_val = normalized_pitch_val + 12 * num_octaves * length_multiplier;
+        let hashed_pitch_val = normalized_pitch_val as u32 + 12 * num_octaves * length_multiplier;
         new_note_sequence.push(hashed_pitch_val);
     }
     new_note_sequence
@@ -196,7 +192,7 @@ mod test {
 
         assert_eq!(
             correct_list,
-            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+            tuples_to_nums(example_list, 3, 50, &vec![0.25, 0.5, 1.0, 2.0, 4.0])
         );
     }
 
@@ -213,7 +209,7 @@ mod test {
 
         assert_eq!(
             correct_list,
-            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+            tuples_to_nums(example_list, 3, 50, &vec![0.25, 0.5, 1.0, 2.0, 4.0])
         );
     }
 
@@ -231,35 +227,29 @@ mod test {
 
         assert_eq!(
             correct_list,
-            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+            tuples_to_nums(example_list, 3, 50, &vec![0.25, 0.5, 1.0, 2.0, 4.0])
         );
     }
 
     #[test]
-    fn different_num_octaces() {}
-    let example_list: Vec<(Note, f32)> = vec![
-        (Note::Rest, 1.0),
-        (Note::Key(67), 2.0),
-        (Note::Key(33), 0.5), // also tests if not value is being parsed correctly
-        (Note::Key(89), 58.0),
-        (Note::Key(124), 58.0), // also tests if not value is being parsed correctly
-    ];
-
-    // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
-    let correct_list = vec![0, 144, 5, 171];
-
-    assert_eq!(
-        correct_list,
-        tuples_to_nums(example_list, 5, 40, vec![0.25, 0.5, 1.0, 2.0, 4.0])
-    );
-
-    // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
-    let correct_list = vec![0, 144, 5, 171];
-
-    assert_eq!(
-        correct_list,
-        tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
-    );
+    fn different_num_octaves() {
+        let example_list: Vec<(Note, f32)> = vec![
+            (Note::Rest, 1.0),
+            (Note::Key(67), 2.0),
+            (Note::Key(33), 0.5), // also tests if not value is being parsed correctly
+            (Note::Key(89), 58.0),
+            (Note::Key(124), 58.0), // also tests if not value is being parsed correctly
+            ];
+            
+            // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
+            let correct_list = vec![0, 144, 5, 171];
+            
+            assert_eq!(
+                correct_list,
+                tuples_to_nums(example_list, 5, 40, &vec![0.25, 0.5, 1.0, 2.0, 4.0])
+            );
+            
+        }
 
     #[test]
     fn random_starting_notes() {}
