@@ -184,7 +184,7 @@ mod test {
     use super::{tuples_to_nums, Note};
 
     #[test]
-    fn do_simple_vals_parse_right() {
+    fn simple_vals_parseing() {
         let example_list: Vec<(Note, f32)> = vec![
             (Note::Key(56), 0.25472),
             (Note::Key(76), 1.25472),
@@ -200,15 +200,67 @@ mod test {
         );
     }
 
+    #[test]
     fn rests_of_different_lengths() {
-        todo!();
+        let example_list: Vec<(Note, f32)> = vec![
+            (Note::Rest, 0.25472),
+            (Note::Rest, 1.25472),
+            (Note::Rest, 0.65472),
+        ];
+
+        // 0 + 36 * 0, 0 + 36 * 2, 0 + 36 * 1
+        let correct_list = vec![0, 72, 36];
+
+        assert_eq!(
+            correct_list,
+            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+        );
     }
 
+    #[test]
     fn testing_super_small_and_large_lengths() {
-        todo!();
+        let example_list: Vec<(Note, f32)> = vec![
+            (Note::Rest, 0.0),
+            (Note::Rest, 25.0),
+            (Note::Key(43), 0.0), // also tests if not value is being parsed correctly
+            (Note::Key(89), 58.0), // also tests if not value is being parsed correctly
+        ];
+
+        // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
+        let correct_list = vec![0, 144, 5, 171];
+
+        assert_eq!(
+            correct_list,
+            tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+        );
     }
 
+    #[test]
     fn different_num_octaces() {}
+    let example_list: Vec<(Note, f32)> = vec![
+        (Note::Rest, 1.0),
+        (Note::Key(67), 2.0),
+        (Note::Key(33), 0.5), // also tests if not value is being parsed correctly
+        (Note::Key(89), 58.0),
+        (Note::Key(124), 58.0), // also tests if not value is being parsed correctly
+    ];
 
+    // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
+    let correct_list = vec![0, 144, 5, 171];
+
+    assert_eq!(
+        correct_list,
+        tuples_to_nums(example_list, 5, 40, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+    );
+
+    // 0 + 36 * 0, 0 + 36 * 4, 5 + 36 * 0, 27 + 36 * 4
+    let correct_list = vec![0, 144, 5, 171];
+
+    assert_eq!(
+        correct_list,
+        tuples_to_nums(example_list, 3, 50, vec![0.25, 0.5, 1.0, 2.0, 4.0])
+    );
+
+    #[test]
     fn random_starting_notes() {}
 }
