@@ -6,32 +6,41 @@ use std::fs::read_dir;
 fn run() -> Result<()> {
     let specified_genre = "classical"; // user selected specified genre
     let directory_path = format!("./src/midi-files-by-genre/{specified_genre}/"); // keep this the same
-    let directory_files = read_dir(directory_path)?;
+    let genre_files = read_dir(directory_path)?;
 
-    let mut note_sequence = Vec::new();
-    for file in directory_files {
-        // for each midi file in the specified genre
+    let filename = "test"; // user selected (?) filename
+
+    let (num_octaves, lowest_allowed_pitch, quantized_durations) = (3, 50, vec![0.25, 1.0, 2.0, 4.0]); // user selected (?) parameters 
+
+    let mut genre_sequence = Vec::new();
+    for midi_file in genre_files { 
         // get the path
-        let midi_path_buf = file.unwrap().path();
+        let midi_path_buf = midi_file.unwrap().path();
         let midi_path = midi_path_buf.to_str().unwrap();
-
+        
         // parse midi file to a note sequence
-        note_sequence.push(parsing::from_midi(midi_path).unwrap());
+        let note_sequence = parsing::from_midi(midi_path).unwrap();
+        // convert note sequence into a trainable string
+        let hashed_sequence: Vec<u32> = parsing::tuples_to_nums(note_sequence, num_octaves, lowest_allowed_pitch, &quantized_durations);
+
+        genre_sequence.push(hashed_sequence);
     }
+
     println!(
         "The note sequence is: {:?} and has {} entries \n",
-        note_sequence,
-        note_sequence.len()
+        genre_sequence,
+        genre_sequence.len()
     );
 
-    // convert note sequence into a trainable string
+    let chain = markov::train_model(genre_sequence)?;
 
-    // pass string into the markov model
-    // chain = markov::train_model(note_sequence, chain)?;
+    let predicted_sequence = markov::predict_sequence(chain, 6)?;
 
-    // predicts
-    // markov::predict_sequence()
-    // parsing::to_midi()
+    let parsed_sequence = parsing::nums_to_tuples(predicted_sequence, num_octaves, lowest_allowed_pitch, &quantized_durations); 
+
+    println!("{:?}", parsed_sequence);
+    // parsing::to_midi(parsed_sequence, filename); // create and save a midi file with name filename 
+
     Ok(())
 }
 
