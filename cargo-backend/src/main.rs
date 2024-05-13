@@ -4,11 +4,11 @@ mod parsing; // module for parsing to and from midi files
 use std::fs::read_dir;
 
 fn run() -> Result<()> {
-    let specified_genre = "rock:pop"; // user selected specified genre
+    let specified_genre = "jazz"; // user selected specified genre
     let directory_path = format!("./src/midi-files-by-genre/{specified_genre}/"); // keep this the same
     let filename = &format!("./src/midi-files-by-genre/test/{specified_genre}_creation.mid"); // user selected (?) filename
     let (num_octaves, lowest_allowed_pitch, quantized_durations) =
-        (3, 50, vec![0.25, 1.0, 2.0, 4.0]); // user selected (?) parameters
+        (3, 50, vec![0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.0]); // user selected (?) parameters
     let genre_files = read_dir(directory_path)?;
 
     let mut genre_sequence = Vec::new();
