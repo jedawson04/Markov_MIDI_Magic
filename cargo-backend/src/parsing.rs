@@ -18,7 +18,7 @@ pub enum Note {
 // this file will have 2 main pub fns: from_midi() and to_midi() which will convert from and to midi files to our Markov model state
 
 // takes in a midi file --> parses, converts to desired format and returns
-pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
+pub fn from_midi(input_filepath: &str, acceptable_pitch_dif: i32, num_octaves: u32, lowest_allowed_pitch: u32) -> Result<Vec<(Note, f32)>> {
     let bytes = fs::read(input_filepath)?; // use read to convert filepath to bytes
     let input_midi_file = Smf::parse(&bytes)?; // use parse to create a midi object
                                                // use track with most events
@@ -51,13 +51,13 @@ pub fn from_midi(input_filepath: &str) -> Result<Vec<(Note, f32)>> {
             }
             if !current_note {
                 // set the first note
-                if current_note_val == 128 && (50..75).contains(&note) {
+                if current_note_val == 128 && (lowest_allowed_pitch as u8..lowest_allowed_pitch as u8 + 12 * num_octaves as u8).contains(&note) {
                     current_note = true;
                     current_note_val = note;
                 }
                 // sets note if we are within an octave
                 let pitch_difference: i32 = note as i32 - current_note_val as i32;
-                if (-24..24).contains(&pitch_difference) {
+                if (-acceptable_pitch_dif..acceptable_pitch_dif).contains(&pitch_difference) {
                     current_note_val = note;
                     current_note = true;
                     // add a rest to note_sequence if applicable
@@ -97,38 +97,45 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str) {
 
     let mut predicted_track = Track::new(); // create our predicted track
 
+    // to allow us to have rests
+    let mut time_since_note = 0.0;
+
     // populate track with our parsed sequence of notes
     for (note, dur) in parsed_sequence.iter() {
-        let delta = *dur as u32 * metrical as u32;
-        let key = match note {
-            Note::Key(key) => u7::from(*key),
-            Note::Rest => u7::from(0), // need to change this to actually be a rest...
+        let note_length = *dur * metrical as f32;
+        println!("{}", note_length);
+        match note {
+            Note::Key(key) => {
+                let key = u7::from(*key);
+                // note on event with a delta of 0 after the previous note off
+                let on_event = TrackEvent {
+                    delta: (time_since_note as u32).into(),
+                    kind: Midi {
+                        channel: 0.into(),
+                        message: MidiMessage::NoteOn {
+                            key,
+                            vel: 50.into(),
+                        },
+                    },
+                };
+                // note off event delta time later
+                let off_event = TrackEvent {
+                    delta: (note_length as u32).into(), // delta time later
+                    kind: Midi {
+                        channel: 0.into(),
+                        message: MidiMessage::NoteOff {
+                            key,
+                            vel: 50.into(),
+                        },
+                    },
+                };
+                // push on and off events
+                predicted_track.push(on_event);
+                predicted_track.push(off_event);
+                time_since_note = 0.0;
+            }
+            Note::Rest => time_since_note += note_length,
         };
-        // note on event with a delta of 0 after the previous note off
-        let on_event = TrackEvent {
-            delta: 0.into(),
-            kind: Midi {
-                channel: 0.into(),
-                message: MidiMessage::NoteOn {
-                    key,
-                    vel: 50.into(),
-                },
-            },
-        };
-        // note off event delta time later
-        let off_event = TrackEvent {
-            delta: delta.into(), // delta time later
-            kind: Midi {
-                channel: 0.into(),
-                message: MidiMessage::NoteOff {
-                    key,
-                    vel: 50.into(),
-                },
-            },
-        };
-        // push on and off events
-        predicted_track.push(on_event);
-        predicted_track.push(off_event);
     }
     // create standard midi file object
     let output_midi = Smf {

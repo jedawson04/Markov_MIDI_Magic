@@ -8,8 +8,9 @@ fn run() -> Result<()> {
     let directory_path = format!("./src/midi-files-by-genre/{specified_genre}/"); // keep this the same
     let filename = &format!("./src/midi-files-by-genre/test/{specified_genre}_creation.mid"); // user selected (?) filename
     let (num_octaves, lowest_allowed_pitch, quantized_durations) =
-        (3, 50, vec![0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.0]); // user selected (?) parameters
+        (3, 50, vec![0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]); // user selected (?) parameters
     let genre_files = read_dir(directory_path)?;
+    let melody_pitch_dif = 12;
 
     let mut genre_sequence = Vec::new();
     for midi_file in genre_files {
@@ -18,7 +19,10 @@ fn run() -> Result<()> {
         let midi_path = midi_path_buf.to_str().unwrap();
 
         // parse midi file to a note sequence
-        let note_sequence = parsing::from_midi(midi_path).unwrap(); 
+        let note_sequence = parsing::from_midi(midi_path, melody_pitch_dif, num_octaves, lowest_allowed_pitch).unwrap();
+        // println!("{:?}", note_sequence);
+        // continue; 
+
         // convert note sequence into a trainable string
         let hashed_sequence: Vec<u32> = parsing::tuples_to_nums(
             note_sequence,
@@ -46,7 +50,7 @@ fn run() -> Result<()> {
         &quantized_durations,
     );
 
-    // println!("{:?}", parsed_sequence);
+    println!("{:?}", parsed_sequence);
     parsing::to_midi(parsed_sequence, filename); // create and save a midi file with name filename
 
     Ok(())
