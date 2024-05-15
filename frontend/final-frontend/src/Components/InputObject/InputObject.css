@@ -97,3 +97,9 @@ input[type="password"]:focus {
     border-radius: 4px;
     cursor: pointer;
 }
+
+.display {
+    position: relative; 
+    height: 500px; /* Adjust this value to your needs */
+    overflow-y: auto;
+  }

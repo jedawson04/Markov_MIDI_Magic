@@ -13,9 +13,9 @@ function App() {
       <div className='inputContainer'>
         <InputObject/>
       </div>
-      <div className='MidiInteract'>
+      {/* <div className='MidiInteract'>
         <MidiPlayerComponent/>
-      </div>
+      </div> */}
     </div>
   );
 }

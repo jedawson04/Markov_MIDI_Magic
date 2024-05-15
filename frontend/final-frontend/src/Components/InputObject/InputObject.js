@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './InputObject.css';
+import Midi_Display from '../MidiDisplay/Midi-Display';
+import "../MidiDisplay/Midi-Display.css";
 
 function TextBox() {
   return (
@@ -7,49 +10,64 @@ function TextBox() {
   );
 }
 
-function ClassicalButton() {
+function StyleButton({ style, setStyle }) {
   return (
-    <button className='Classical'>Classical</button>
+    <button onClick={() => setStyle(style)} className={style}>{style}</button>
   );
 }
 
-function RockButton() {
+function SubmitButton({ style, setMidiDisplay }) {
+
+  const [fileUrl, setFileUrl] = useState(null);
+
+  useEffect(() => {
+    console.log("fileUrl is " + fileUrl);
+    if (fileUrl) {
+      setMidiDisplay(<Midi_Display midiFilePath={fileUrl} />);
+    }
+  }, [fileUrl]);
+  
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+  
+    try {
+      const response = await axios.post('http://localhost:3030/midi', { style }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: 'blob', // Tell axios to expect a Blob in the response
+      });
+      console.log("response is " + response);
+      // Create a Blob URL from the response data
+      const fileUrlGrab = URL.createObjectURL(response.data);
+      setFileUrl(fileUrlGrab);
+    } catch (error) {
+      console.error('Error generating MIDI file:', error);
+    }
+  };
+  
+
   return (
-    <button className='Rock'>Rock </button>
+    <button onClick={handleSubmit} className='Submit'>Submit</button>
   );
 }
 
-function RnbButton() {
-  return (
-    <button className='Rnb'>Rnb</button>
-  );
-}
-
-function JazzButton() {
-  return (
-    <button className='Jazz'>Jazz</button>
-  );
-}
-
-function SubmitButton() {
-  return (
-    <button className='Submit'>Submit</button>
-  );
-}
 
 function InputObject() {
+  const [style, setStyle] = useState('');
+  const [midiDisplay, setMidiDisplay] = useState(null);
+
+  console.log("mididisplay is " + midiDisplay);
+
   return (
-    <div className="inputObjectContainer">
-      <div className="inputAndSubmitContainer">  
-        <TextBox />
-        <SubmitButton />
-      </div>
-      <div className="buttonContainer">
-        <ClassicalButton />
-        <RockButton />
-        <RnbButton />
-        <JazzButton />
-      </div>
+    <div>
+      <TextBox />
+      <StyleButton style='Classical' setStyle={setStyle} />
+      <StyleButton style='Rock' setStyle={setStyle} />
+      <StyleButton style='Rnb' setStyle={setStyle} />
+      <StyleButton style='Jazz' setStyle={setStyle} />
+      <SubmitButton style={style} setMidiDisplay={setMidiDisplay} />
+      <div className='display'>{midiDisplay}</div>
     </div>
   );
 }
