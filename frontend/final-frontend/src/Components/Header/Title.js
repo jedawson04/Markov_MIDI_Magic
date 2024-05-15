@@ -2,7 +2,7 @@ import React from "react";
 import "./Title.css";
 
 function Title() {
-  return <h1 className="title">Whatever our project name is</h1>;
+  return <h1 className="title">Markov Model MIDI Magic</h1>;
 }
 
 export default Title;

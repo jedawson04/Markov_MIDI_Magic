@@ -22,7 +22,7 @@ warp::serve(midi_route)
 }
 
 async fn handle_midi() -> Result<impl warp::Reply, warp::Rejection> {
-    let file = File::open("Pirate.mid").await.unwrap();
+    let file = File::open("src\\midi-files-by-genre\\test\\jazz_creation.mid").await.unwrap();
     let body = Body::wrap_stream(tokio_util::io::ReaderStream::new(file));
     Ok(Response::new(body))
 }

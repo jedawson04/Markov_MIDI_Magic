@@ -1,7 +1,7 @@
 use crate::Result;
 use midly::{
-    num::u7, Format, Header, MidiMessage, Smf, Timing::Metrical, Track, TrackEvent,
-    TrackEventKind::Midi,
+    num::u7, Format, MetaMessage::EndOfTrack, Header, MidiMessage, Smf, Timing::Metrical, Track, TrackEvent,
+    TrackEventKind::{Midi, Meta}
 };
 use std::fs;
 
@@ -137,6 +137,11 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
             }
             Note::Rest => time_since_note += note_length,
         };
+    let end_track_event = TrackEvent { 
+        delta: 0.into(), 
+        kind: Meta(EndOfTrack),
+    };
+    predicted_track.push(end_track_event);
     }
     // create standard midi file object
     let output_midi = Smf {

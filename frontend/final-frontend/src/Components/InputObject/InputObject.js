@@ -48,7 +48,7 @@ function SubmitButton({ style, setMidiDisplay }) {
   
 
   return (
-    <button onClick={handleSubmit} className='Submit'>Submit</button>
+    <button onClick={handleSubmit} className='Submit'>Magic</button>
   );
 }
 
@@ -60,13 +60,22 @@ function InputObject() {
   console.log("mididisplay is " + midiDisplay);
 
   return (
-    <div>
-      <TextBox />
-      <StyleButton style='Classical' setStyle={setStyle} />
-      <StyleButton style='Rock' setStyle={setStyle} />
-      <StyleButton style='Rnb' setStyle={setStyle} />
-      <StyleButton style='Jazz' setStyle={setStyle} />
-      <SubmitButton style={style} setMidiDisplay={setMidiDisplay} />
+    <div style={{width: "75%"}}>
+      <div style={{  
+      padding: "20px",   
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "auto"}}>
+        {/* <TextBox />
+        <StyleButton style='Classical' setStyle={setStyle} />
+        <StyleButton style='Rock' setStyle={setStyle} />
+        <StyleButton style='Rnb' setStyle={setStyle} />
+        <StyleButton style='Jazz' setStyle={setStyle} /> */}
+        <SubmitButton style={style} setMidiDisplay={setMidiDisplay} />
+        
+      </div>
       <div className='display'>{midiDisplay}</div>
     </div>
   );
