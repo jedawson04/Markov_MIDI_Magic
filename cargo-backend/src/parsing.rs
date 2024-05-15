@@ -1,7 +1,3 @@
-// http://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html
-// this is an excellent website explaining what MIDI data looks like. It's a little tough to read but has great info
-// plus it has example midi files at the bottom
-
 use crate::Result;
 use midly::{
     num::u7, Format, Header, MidiMessage, Smf, Timing::Metrical, Track, TrackEvent,
@@ -15,10 +11,14 @@ pub enum Note {
     Key(u8),
     Rest,
 }
-// this file will have 2 main pub fns: from_midi() and to_midi() which will convert from and to midi files to our Markov model state
 
 // takes in a midi file --> parses, converts to desired format and returns
-pub fn from_midi(input_filepath: &str, acceptable_pitch_dif: i32, num_octaves: u32, lowest_allowed_pitch: u32) -> Result<Vec<(Note, f32)>> {
+pub fn from_midi(
+    input_filepath: &str,
+    acceptable_pitch_dif: i32,
+    num_octaves: u32,
+    lowest_allowed_pitch: u32,
+) -> Result<(Vec<(Note, f32)>, u16)> {
     let bytes = fs::read(input_filepath)?; // use read to convert filepath to bytes
     let input_midi_file = Smf::parse(&bytes)?; // use parse to create a midi object
                                                // use track with most events
@@ -51,7 +51,11 @@ pub fn from_midi(input_filepath: &str, acceptable_pitch_dif: i32, num_octaves: u
             }
             if !current_note {
                 // set the first note
-                if current_note_val == 128 && (lowest_allowed_pitch as u8..lowest_allowed_pitch as u8 + 12 * num_octaves as u8).contains(&note) {
+                if current_note_val == 128
+                    && (lowest_allowed_pitch as u8
+                        ..lowest_allowed_pitch as u8 + 12 * num_octaves as u8)
+                        .contains(&note)
+                {
                     current_note = true;
                     current_note_val = note;
                 }
@@ -85,15 +89,14 @@ pub fn from_midi(input_filepath: &str, acceptable_pitch_dif: i32, num_octaves: u
             }
         }
     }
-    Ok(note_sequence)
+    Ok((note_sequence, this_metrical as u16))
 }
 
 // takes in a markov object and returns a midi file
-pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str) {
-    let metrical: u16 = 16929; // i just picked a number... lol
-    let single_track_format = Format::SingleTrack;
+pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrical: u16) {
+    println!("{}", metrical);
     let metrical_timing = Metrical(metrical.into());
-    let header = Header::new(single_track_format, metrical_timing); // create our header for the file
+    let header = Header::new(Format::SingleTrack, metrical_timing); // create our header for the file
 
     let mut predicted_track = Track::new(); // create our predicted track
 
@@ -103,7 +106,6 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str) {
     // populate track with our parsed sequence of notes
     for (note, dur) in parsed_sequence.iter() {
         let note_length = *dur * metrical as f32;
-        println!("{}", note_length);
         match note {
             Note::Key(key) => {
                 let key = u7::from(*key);
@@ -142,7 +144,6 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str) {
         header,
         tracks: vec![predicted_track.clone()],
     };
-    // println!("{predicted_track:?}"); // what our note events look like
     let _ = output_midi.save(output_filename);
     println!(
         "Length of parsed seqeunce output of markov model... {}",
@@ -219,9 +220,6 @@ pub fn nums_to_tuples(
 
         // finding key val
         let base_note_val = hashed_note % (12 * &num_octaves + 1);
-        // println!("\nThe hashed val is: {}", hashed_note);
-        // println!("The modder is: {}", (12 * &num_octaves + 1));
-        // println!("The mod is: {}\n", hashed_note % (12 * &num_octaves + 1));
 
         // push either a rest and length or a note and a length
         if base_note_val == 0 {
