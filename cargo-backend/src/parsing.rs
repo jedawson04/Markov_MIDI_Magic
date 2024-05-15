@@ -94,7 +94,6 @@ pub fn from_midi(
 
 // takes in a markov object and returns a midi file
 pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrical: u16) {
-    println!("{}", metrical);
     let metrical_timing = Metrical(metrical.into());
     let header = Header::new(Format::SingleTrack, metrical_timing); // create our header for the file
 
@@ -145,10 +144,10 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
         tracks: vec![predicted_track.clone()],
     };
     let _ = output_midi.save(output_filename);
-    println!(
-        "Length of parsed seqeunce output of markov model... {}",
-        parsed_sequence.len()
-    );
+    // println!(
+    //     "Length of parsed seqeunce output of markov model... {}",
+    //     parsed_sequence.len()
+    // );
 }
 
 // convert a (Note, beat) tuple to a single unique num to pass into our markov model
