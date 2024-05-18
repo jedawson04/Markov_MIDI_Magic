@@ -1,7 +1,12 @@
 use crate::Result;
 use midly::{
-    num::u7, Format, MetaMessage::EndOfTrack, Header, MidiMessage, Smf, Timing::Metrical, Track, TrackEvent,
-    TrackEventKind::{Midi, Meta}
+    num::u7,
+    Format, Header,
+    MetaMessage::EndOfTrack,
+    MidiMessage, Smf,
+    Timing::Metrical,
+    Track, TrackEvent,
+    TrackEventKind::{Meta, Midi},
 };
 use std::fs;
 
@@ -79,7 +84,9 @@ pub fn from_midi(
                 // add note to sequence
                 let beat_length: f32 =
                     (ticks_since_on as f32 + delta as f32) / this_metrical as f32;
-                note_sequence.push((Note::Key(current_note_val), beat_length));
+                if beat_length <= 16.0 {
+                    note_sequence.push((Note::Key(current_note_val), beat_length))
+                };
                 // reset ticks and set current_note to false
                 current_note = false;
                 ticks_since_on = 0;
@@ -98,50 +105,50 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
     let header = Header::new(Format::SingleTrack, metrical_timing); // create our header for the file
 
     let mut predicted_track = Track::new(); // create our predicted track
-
+    
     // to allow us to have rests
     let mut time_since_note = 0.0;
-
-    // populate track with our parsed sequence of notes
-    for (note, dur) in parsed_sequence.iter() {
+    let mut note_histogram = vec![0; 127]; // note hist vec
+    for (note, dur) in parsed_sequence.iter() { // populate track
         let note_length = *dur * metrical as f32;
         match note {
             Note::Key(key) => {
                 let key = u7::from(*key);
-                // note on event with a delta of 0 after the previous note off
+                note_histogram[u8::from(key) as usize] += 1; // populate histogram
+                // note on event w delta of time_since_note
                 let on_event = TrackEvent {
                     delta: (time_since_note as u32).into(),
                     kind: Midi {
                         channel: 0.into(),
                         message: MidiMessage::NoteOn {
                             key,
-                            vel: 50.into(),
+                            vel: 50.into(), // arbitrarily decided
                         },
                     },
                 };
-                // note off event delta time later
+                // note off event w delta of note_length
                 let off_event = TrackEvent {
-                    delta: (note_length as u32).into(), // delta time later
+                    delta: (note_length as u32).into(), 
                     kind: Midi {
                         channel: 0.into(),
                         message: MidiMessage::NoteOff {
                             key,
-                            vel: 50.into(),
+                            vel: 50.into(), // arbitrarily decided
                         },
                     },
                 };
                 // push on and off events
                 predicted_track.push(on_event);
                 predicted_track.push(off_event);
-                time_since_note = 0.0;
+                time_since_note = 0.0; // reset time since note
             }
             Note::Rest => time_since_note += note_length,
         };
-    let end_track_event = TrackEvent { 
-        delta: 0.into(), 
-        kind: Meta(EndOfTrack),
-    };
-    predicted_track.push(end_track_event);
+        let end_track_event = TrackEvent { // push EoT event
+            delta: 0.into(),
+            kind: Meta(EndOfTrack),
+        };
+        predicted_track.push(end_track_event);
     }
     // create standard midi file object
     let output_midi = Smf {
@@ -149,10 +156,18 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
         tracks: vec![predicted_track.clone()],
     };
     let _ = output_midi.save(output_filename);
-    // println!(
-    //     "Length of parsed seqeunce output of markov model... {}",
-    //     parsed_sequence.len()
-    // );
+
+    println!("{:?}", note_histogram); // displays note histogram
+
+    let mut max_val = -1;
+    let mut max_ind = 0;
+    for (i, val) in note_histogram.iter().enumerate() {
+        if *val > max_val {
+            max_ind = i;
+            max_val = *val;
+        };
+    }
+    println!("{max_ind}, {max_val}"); // displays most common note and # of occurrances
 }
 
 // convert a (Note, beat) tuple to a single unique num to pass into our markov model
@@ -165,7 +180,9 @@ pub fn tuples_to_nums(
     let mut new_note_sequence: Vec<u32> = Vec::new();
     for (note, duration) in note_sequence {
         let mut normalized_pitch_val = 0; // assume rest normalized pitch val
-
+        if duration > 30.0 {
+            println!("{duration}, {note:?}");
+        }
         if let Note::Key(pitch) = note {
             // normalize pitch to lowest_allowed_pitch
             normalized_pitch_val = pitch as i32 - lowest_allowed_pitch as i32;

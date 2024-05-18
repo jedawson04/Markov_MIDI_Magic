@@ -4,8 +4,8 @@ use markov::Chain;
 /// documentation for markov crate: https://crates.io/crates/markov
 
 /// train model method to create a new markov chain and train it on the data parameter
-pub fn train_model(genre_sequence: &Vec<Vec<u32>>) -> Result<Chain<u32>> {
-    let mut chain = Chain::of_order(3); // create a new markov chain of order three
+pub fn train_model(genre_sequence: &Vec<Vec<u32>>, order: usize) -> Result<Chain<u32>> {
+    let mut chain = Chain::of_order(order); // create a new markov chain of order three
 
     for sequence in genre_sequence {
         // feed it the seqeunce from each file
