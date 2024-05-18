@@ -1,8 +1,8 @@
-use warp::Filter;
-use warp::http::Response;
-use warp::hyper::Body;
 use tokio::fs::File;
 use warp::cors::Cors;
+use warp::http::Response;
+use warp::hyper::Body;
+use warp::Filter;
 
 #[tokio::main]
 async fn main() {
@@ -15,14 +15,13 @@ async fn main() {
         .and(warp::options().map(warp::reply).with(cors.clone()))
         .or(warp::path("midi").and_then(handle_midi).with(cors));
 
-
-warp::serve(midi_route)
-    .run(([127, 0, 0, 1], 3030))
-    .await;
+    warp::serve(midi_route).run(([127, 0, 0, 1], 3030)).await;
 }
 
 async fn handle_midi() -> Result<impl warp::Reply, warp::Rejection> {
-    let file = File::open("src\\midi-files-by-genre\\test\\jazz_creation.mid").await.unwrap();
+    let file = File::open("src\\midi-files-by-genre\\test\\jazz_creation.mid")
+        .await
+        .unwrap();
     let body = Body::wrap_stream(tokio_util::io::ReaderStream::new(file));
     Ok(Response::new(body))
 }
