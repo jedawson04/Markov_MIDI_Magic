@@ -1,12 +1,13 @@
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>; // Generic Result type
-mod markov; // module for trainig and predicting markov model
-mod parsing; // module for parsing to and from midi files
+mod markov_chain;
+mod parsing; // module for parsing to and from midi files // module for training and predicting with markov_chain
 use std::fs::read_dir;
 
 fn run() -> Result<()> {
     // user stuff...
-    let user_specification = vec!["scarlatti/petzgold", "jazz"]; // user selected genre(s)
-                                                       // -- TRAINING ON MULTIPLE GENRES MESSES UP THE METRICAL a bit.. lol. but it sounds cool? - maybe we normalize somehow.
+    let user_specification = vec!["jazz", "scar_pet", "scar_pet", "scar_pet", "jazz"]; // user selected genre(s)
+    
+    // -- TRAINING ON MULTIPLE GENRES MESSES UP THE METRICAL a bit.. lol. but it sounds cool? - maybe we normalize somehow.
     // user selected parameters --
     let (
         num_octaves,
@@ -17,13 +18,13 @@ fn run() -> Result<()> {
         markov_order,
         longest_parsed_duration,
     ) = (
-        3,      // # allowed octaves
-        50,     // lowest allowed pitch -- this has a lot of impact on the melodic contour of the output
+        3,    // num allowed octaves
+        30, // lowest allowed pitch -- this has a lot of impact on the melodic contour of the output
         0.0625, // shortest/current duration - this is a 64th note, we can calculate beats by taking 4.0/64
-        4.0,    // longest duration - this is a whole note, 4.0/1
-        36,     // longest semitone range between consecutive notes
-        3,      // markov order
-        16.0,   // longest duration we allow to be parsed in beats
+        4.0, // longest duration - this is a whole note, 4.0/1
+        36,  // longest semitone range between consecutive notes
+        3,   // markov order
+        16.0, // longest duration we allow to be parsed in beats
     );
     // given a lower and upper dur range, this is how I'm filling them in
     let mut quantized_durations = Vec::new();
@@ -75,9 +76,9 @@ fn run() -> Result<()> {
 
     let avg_metrical = (metricals.iter().min().unwrap() + metricals.iter().max().unwrap()) / 2;
 
-    let chain = markov::train_model(&training_sequence, markov_order)?;
+    let chain = markov_chain::train_model(&training_sequence, markov_order)?;
 
-    let predicted_sequence = markov::predict_sequence(chain, training_sequence.len())?;
+    let predicted_sequence = markov_chain::predict_sequence(chain, training_sequence.len())?;
 
     let parsed_sequence = parsing::nums_to_tuples(
         predicted_sequence,

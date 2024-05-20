@@ -1,14 +1,13 @@
 [package]
-name = "cargo-backend"
+name = "backend"
 version = "0.1.0"
 edition = "2021"
-# default-run = "webserver"
+default-run = "main" # can change this when convienent
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 markov = "1.1.0"
-midi-reader-writer = "0.1.1"
 midly = "0.5.3"
 tokio = { version = "1.37.0", features = ["full"] }
 tokio-util = { version = "0.6", features = ["io"] }

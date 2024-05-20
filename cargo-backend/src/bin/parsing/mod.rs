@@ -159,6 +159,7 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
         tracks: vec![predicted_track.clone()],
     };
     let _ = output_midi.save(output_filename);
+    println!("{:?}", output_filename); // displays note histogram
 
     println!("{:?}", note_histogram); // displays note histogram
 
