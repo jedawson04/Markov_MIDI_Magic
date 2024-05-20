@@ -19,7 +19,7 @@ async fn main() {
 }
 
 async fn handle_midi() -> Result<impl warp::Reply, warp::Rejection> {
-    let file = File::open("src\\midi-files-by-genre\\test\\jazz_creation.mid")
+    let file = File::open("src\\creations\\jazz_creation.mid")
         .await
         .unwrap();
     let body = Body::wrap_stream(tokio_util::io::ReaderStream::new(file));

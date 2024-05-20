@@ -4,47 +4,73 @@ mod parsing; // module for parsing to and from midi files
 use std::fs::read_dir;
 
 fn run() -> Result<()> {
-    let specified_genre = "Jazz"; // user selected
-                                  // path to genre folder
-    let directory_path = format!("./src/midi-files-by-genre/{specified_genre}/");
-    // default filename
-    let filename = &format!("./src/midi-files-by-genre/test/{specified_genre}_creation.mid");
-    // user selected (?) parameters
-    let (num_octaves, lowest_allowed_pitch, quantized_durations, melody_pitch_dif, markov_order) = (
-        3,
-        50,
-        vec![0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 60.0],
-        36,
-        3,
+    // user stuff...
+    let user_specification = vec!["scarlatti/petzgold", "jazz"]; // user selected genre(s)
+                                                       // -- TRAINING ON MULTIPLE GENRES MESSES UP THE METRICAL a bit.. lol. but it sounds cool? - maybe we normalize somehow.
+    // user selected parameters --
+    let (
+        num_octaves,
+        lowest_allowed_pitch,
+        mut current_duration,
+        longest_duration,
+        melody_pitch_dif,
+        markov_order,
+        longest_parsed_duration,
+    ) = (
+        3,      // # allowed octaves
+        50,     // lowest allowed pitch -- this has a lot of impact on the melodic contour of the output
+        0.0625, // shortest/current duration - this is a 64th note, we can calculate beats by taking 4.0/64
+        4.0,    // longest duration - this is a whole note, 4.0/1
+        36,     // longest semitone range between consecutive notes
+        3,      // markov order
+        16.0,   // longest duration we allow to be parsed in beats
     );
-    let genre_files = read_dir(directory_path)?;
+    // given a lower and upper dur range, this is how I'm filling them in
+    let mut quantized_durations = Vec::new();
+    while current_duration <= longest_duration {
+        quantized_durations.push(current_duration);
+        current_duration *= 2.0;
+    }
+    println!("{quantized_durations:?}");
 
-    let mut training_sequence = Vec::new();
-    let mut metricals = Vec::new();
-    for midi_file in genre_files {
-        // get the path
-        let midi_path_buf = midi_file.unwrap().path();
-        let midi_path = midi_path_buf.to_str().unwrap();
+    // default filename and initialized vecs
+    let (filename, mut training_sequence, mut metricals): (&str, Vec<Vec<u32>>, Vec<u16>) = (
+        &format!("./src/creations/{user_specification:?}_order_{markov_order}_creation.mid"),
+        Vec::new(),
+        Vec::new(),
+    );
 
-        // parse midi file to a note sequence
-        let (note_sequence, metrical) = parsing::from_midi(
-            midi_path,
-            melody_pitch_dif,
-            num_octaves,
-            lowest_allowed_pitch,
-        )
-        .unwrap();
+    for specified_genre in user_specification {
+        // path to genre folder
+        let directory_path = format!("./src/midi-files-by-genre/{specified_genre}/");
+        let genre_files = read_dir(directory_path)?;
 
-        // convert note sequence into a trainable string
-        let hashed_sequence: Vec<u32> = parsing::tuples_to_nums(
-            note_sequence,
-            num_octaves,
-            lowest_allowed_pitch,
-            &quantized_durations,
-        );
-        // push sequence and metrical
-        training_sequence.push(hashed_sequence);
-        metricals.push(metrical);
+        for midi_file in genre_files {
+            // get the path
+            let midi_path_buf = midi_file.unwrap().path();
+            let midi_path = midi_path_buf.to_str().unwrap();
+
+            // parse midi file to a note sequence
+            let (note_sequence, metrical) = parsing::from_midi(
+                midi_path,
+                melody_pitch_dif,
+                num_octaves,
+                lowest_allowed_pitch,
+                longest_parsed_duration,
+            )
+            .unwrap();
+
+            // convert note sequence into a trainable string
+            let hashed_sequence: Vec<u32> = parsing::tuples_to_nums(
+                note_sequence,
+                num_octaves,
+                lowest_allowed_pitch,
+                &quantized_durations,
+            );
+            // push sequence and metrical
+            training_sequence.push(hashed_sequence);
+            metricals.push(metrical);
+        }
     }
 
     let avg_metrical = (metricals.iter().min().unwrap() + metricals.iter().max().unwrap()) / 2;
