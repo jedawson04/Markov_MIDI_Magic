@@ -3,29 +3,15 @@ mod markov_chain;
 mod parsing; // module for parsing to and from midi files // module for training and predicting with markov_chain
 use std::fs::read_dir;
 
-fn run() -> Result<()> {
-    // user stuff...
-    let user_specification = vec!["jazz", "scar_pet", "scar_pet", "scar_pet", "jazz"]; // user selected genre(s)
-    
-    // -- TRAINING ON MULTIPLE GENRES MESSES UP THE METRICAL a bit.. lol. but it sounds cool? - maybe we normalize somehow.
-    // user selected parameters --
-    let (
-        num_octaves,
-        lowest_allowed_pitch,
-        mut current_duration,
-        longest_duration,
-        melody_pitch_dif,
-        markov_order,
-        longest_parsed_duration,
-    ) = (
-        3,    // num allowed octaves
-        30, // lowest allowed pitch -- this has a lot of impact on the melodic contour of the output
-        0.0625, // shortest/current duration - this is a 64th note, we can calculate beats by taking 4.0/64
-        4.0, // longest duration - this is a whole note, 4.0/1
-        36,  // longest semitone range between consecutive notes
-        3,   // markov order
-        16.0, // longest duration we allow to be parsed in beats
-    );
+fn run(
+    user_specification: Vec<&str>,
+    num_octaves: u32,
+    lowest_allowed_pitch: u32,
+    mut current_duration: f32,
+    longest_duration: f32,
+    melody_pitch_dif: i32,
+    markov_order: usize,
+) -> Result<()> {
     // given a lower and upper dur range, this is how I'm filling them in
     let mut quantized_durations = Vec::new();
     while current_duration <= longest_duration {
@@ -57,7 +43,6 @@ fn run() -> Result<()> {
                 melody_pitch_dif,
                 num_octaves,
                 lowest_allowed_pitch,
-                longest_parsed_duration,
             )
             .unwrap();
 
@@ -93,8 +78,36 @@ fn run() -> Result<()> {
 }
 
 fn main() {
+    // user stuff... abstract this later somehow
+
+    // -- TRAINING ON MULTIPLE GENRES MESSES UP THE METRICAL a bit.. lol. but it sounds cool? - maybe we normalize somehow.
+    // user selected parameters --
+    let (
+        num_octaves,
+        lowest_allowed_pitch,
+        current_duration,
+        longest_duration,
+        melody_pitch_dif,
+        markov_order,
+    ) = (
+        3,      // num allowed octaves
+        50, // lowest allowed pitch -- this has a lot of impact on the melodic contour of the output
+        0.0625, // shortest/current duration - this is a 64th note, we can calculate beats by taking 4.0/64
+        4.0,    // longest duration - this is a whole note, 4.0/1
+        36,     // longest semitone range between consecutive notes
+        3,      // markov order
+    );
     // calls run and handles errors
-    if let Err(err) = run() {
+    let user_specification = vec!["classical", "jazz"]; // user selected genre(s)
+    if let Err(err) = run(
+        user_specification,
+        num_octaves,
+        lowest_allowed_pitch,
+        current_duration,
+        longest_duration,
+        melody_pitch_dif,
+        markov_order,
+    ) {
         eprintln!("{err}");
         std::process::exit(1);
     }

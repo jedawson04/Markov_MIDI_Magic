@@ -23,7 +23,6 @@ pub fn from_midi(
     acceptable_pitch_dif: i32,
     num_octaves: u32,
     lowest_allowed_pitch: u32,
-    longest_parsed_duration: f32,
 ) -> Result<(Vec<(Note, f32)>, u16)> {
     let bytes = fs::read(input_filepath)?; // use read to convert filepath to bytes
     let input_midi_file = Smf::parse(&bytes)?; // use parse to create a midi object
@@ -85,7 +84,7 @@ pub fn from_midi(
                 // add note to sequence
                 let beat_length: f32 =
                     (ticks_since_on as f32 + delta as f32) / this_metrical as f32;
-                if beat_length < longest_parsed_duration {
+                if beat_length < 16.0 {
                     // ignore notes greater than this
                     note_sequence.push((Note::Key(current_note_val), beat_length))
                 };
@@ -159,8 +158,8 @@ pub fn to_midi(parsed_sequence: Vec<(Note, f32)>, output_filename: &str, metrica
         tracks: vec![predicted_track.clone()],
     };
     let _ = output_midi.save(output_filename);
-    println!("{:?}", output_filename); // displays note histogram
 
+    println!("{:?}", output_filename); // displays output filename
     println!("{:?}", note_histogram); // displays note histogram
 
     let mut max_val = -1;

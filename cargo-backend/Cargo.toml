@@ -1,8 +1,8 @@
 [package]
-name = "backend"
+name = "cargo-backend"
 version = "0.1.0"
 edition = "2021"
-default-run = "main" # can change this when convienent
+default-run = "webserver" # can change this when convienent
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
