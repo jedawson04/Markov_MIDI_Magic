@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './InputObject.css';
-import Midi_Display from '../MidiDisplay/Midi-Display';
-import "../MidiDisplay/Midi-Display.css";
+import MidiDisplay from '../MidiDisplay/MidiDisplay';
+import "../MidiDisplay/MidiDisplay.css";
 
 function TextBox() {
   return (
@@ -23,9 +23,9 @@ function SubmitButton({ style, setMidiDisplay }) {
   useEffect(() => {
     console.log("fileUrl is " + fileUrl);
     if (fileUrl) {
-      setMidiDisplay(<Midi_Display midiFilePath={fileUrl} />);
+      setMidiDisplay(<MidiDisplay midiFilePath={fileUrl} />);
     }
-  }, [fileUrl]);
+  }, [fileUrl, setMidiDisplay]);
   
   const handleSubmit = async (event) => {
     event.preventDefault();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import Midi from "midi-player-js";
-import "./Midi-Display.css";
+import "./MidiDisplay.css";
 
 // returns iterability of a passed in object
 function isIterable(obj) {
@@ -65,7 +65,7 @@ function buildNotes(notes, keyWidth, lowest, totalTicks) {
 }
 
 // creates midi display given a file path
-function Midi_Display({ midiFilePath }) {
+function MidiDisplay({ midiFilePath }) {
   // define useState Hooks for state variables
   const midiDisplayRef = useRef(<div/>);
   const [numNotes, setNumNotes] = useState([0, 0]);
@@ -108,15 +108,15 @@ function Midi_Display({ midiFilePath }) {
         event.forEach((e) => { 
           // Note off is not a needed check as the library only displays things as note on :'(
           // Keeping the check around though in case they fix the library
-          if (e.name == "Note on" || e.name == "Note off") { // everything we want to actually do is in here
+          if (e.name === "Note on" || e.name === "Note off") { // everything we want to actually do is in here
             if (e.tick > totalTicks) { 
               // update total ticks -- this seems like a longest tick though, not a total, unless I'm misunderstanding what e.tick is
               totalTicks = e.tick;
             }
-            if (noteToNoteState[e.noteNumber] == undefined) { // haven't seen note before
+            if (noteToNoteState[e.noteNumber] === undefined) { // haven't seen note before
               noteToNoteState[e.noteNumber] = [e.noteName, true, e.tick]; // number stored with (name, on/off state, tick)
             } else { // if we've seen the note before
-              if (noteToNoteState[e.noteNumber][1] == true) { // note currently on state
+              if (noteToNoteState[e.noteNumber][1] === true) { // note currently on state
                 // push current note state and set state to false
                 notes.push([
                   e.noteName,
@@ -149,11 +149,11 @@ function Midi_Display({ midiFilePath }) {
     for (let i = numNotes[0]; i <= numNotes[1]; i++) {
       // 1 3 6 8 10 are black keys
       if (
-        i % 12 == 1 ||
-        i % 12 == 3 ||
-        i % 12 == 6 ||
-        i % 12 == 8 ||
-        i % 12 == 10
+        i % 12 === 1 ||
+        i % 12 === 3 ||
+        i % 12 === 6 ||
+        i % 12 === 8 ||
+        i % 12 === 10
       ) {
         blackKeyNum++; 
       }
@@ -205,7 +205,7 @@ function Midi_Display({ midiFilePath }) {
       window.removeEventListener("resize", handleResize);
     };
     
-  }, []);
+  });
   
 
   useEffect(() => { // update state variables 
@@ -220,12 +220,12 @@ function Midi_Display({ midiFilePath }) {
     }
 
 
-  }, [midiFilePath, keyWidth, keyHeight]);
+  });
 
   useEffect(() => { // calls fetchMidiFile -- i don't understand the purpose of this effect hook
     console.log("FILE PATH CHANGED");
     fetchMidiFile();
-  }, [midiFilePath]);
+  },);
 
   if (!isLoaded) { 
     return <div>Loading...</div>;
@@ -280,11 +280,11 @@ function Midi_Display({ midiFilePath }) {
         for (let i = numNotes[0]; i <= numNotes[1]; i++) {
           // 1 3 6 8 10 are black keys
           if (
-            i % 12 == 1 ||
-            i % 12 == 3 ||
-            i % 12 == 6 ||
-            i % 12 == 8 ||
-            i % 12 == 10
+            i % 12 === 1 ||
+            i % 12 === 3 ||
+            i % 12 === 6 ||
+            i % 12 === 8 ||
+            i % 12 === 10
           ) {
             divArray.push(
               <div
@@ -329,6 +329,6 @@ function Midi_Display({ midiFilePath }) {
   );
 }
 
-export default Midi_Display;
+export default MidiDisplay;
 
-<Midi_Display midiFilePath="/path/to/your/midi/file.mid" />;
+<MidiDisplay midiFilePath="/path/to/your/midi/file.mid" />;
